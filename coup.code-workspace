@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"name": "coup-engine",
+			"path": "coup-engine"
+		},
+		{
+			"name": "coup-game",
+			"path": "coup-game"
+		},
+	],
+}

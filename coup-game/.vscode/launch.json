@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'coup-game'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=coup-game",
+                    "--package=coup-game"
+                ],
+                "filter": {
+                    "name": "coup-game",
+                    "kind": "bin"
+                }
+            },
+            "args": [ "4" ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'coup-game'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=coup-game",
+                    "--package=coup-game"
+                ],
+                "filter": {
+                    "name": "coup-game",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
