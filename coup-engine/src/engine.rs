@@ -37,7 +37,7 @@ pub enum Class {
 }
 
 #[derive(Default)]
-pub struct Deck {
+struct Deck {
     cards: Vec<Class>,
 }
 

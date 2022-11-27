@@ -1,7 +1,7 @@
 # Coup Simulator
 This project is for learning Rust.
 
-## Getting started
+## Getting Started
 1. Open the coup.code-workspace in VS Code
 1. Install the recommended extensions
 1. Should be able to F5 and set breakpoints to debug the code
@@ -9,6 +9,15 @@ This project is for learning Rust.
 ```shell
 cargo run {num players}
 ```
+
+## Project Structure
+`coup-engine`
+
+Library containing the engine implementation along with the interface definition for the players.
+
+`coup-game`
+
+Thin binary over coup-engine that parses command line args and calls into the engine library to run the game.
 
 ## Running Tests
 ### From UI (with debugging):
