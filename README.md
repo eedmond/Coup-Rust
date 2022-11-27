@@ -58,3 +58,4 @@ cargo test
     - Supports dynamic and static dispatch
         - We'll require dynamic for player controllers
 - String is to std::string as &str is to char *
+- I thought I read MSFT's C++ compiler works better than LLDB, but experimentally, I have not found that to be the case.
