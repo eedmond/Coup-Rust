@@ -34,6 +34,14 @@ cargo test
 - Players should run in separate threads (to learn concurrency)
 - Players should have read-access to the state of the world (to learn ownership and mutability)
 
+## Roadmap
+- Engine needs to implement game rules.
+- Engine needs to query players for actions.
+- Engine should own the game logic (i.e. players shouldn't be able to cheat).
+- PlayerController interface should be fleshed out.
+- Data ownership needs to be implemented correctly (e.g. PlayerControllers can read the public state of the world, but can't modify it or read private state).
+- PlayerControllers should run concurrently (just for the heck of it).
+
 ## Learnings
 - Doc tests don't run in binaries
 - Doc tests can't access private members -- use unit tests
