@@ -1,16 +1,17 @@
 #![allow(dead_code)]
 use core::fmt::Debug;
+use mset::MultiSet;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::cmp;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 #[derive(Debug)]
 pub enum Action<'a> {
-    Unknown,
     /// Provides a callback that takes in a set of cards (which will be random from the deck) and returns 2 cards back to the deck.
     Ambassador {
-        select_role: fn([Class; 2]) -> [Class; 2],
+        select_role: fn([Option<Class>; 2]) -> [Option<Class>; 2],
     },
     Assassinate {
         target_player: &'a Player,
@@ -26,9 +27,8 @@ pub enum Action<'a> {
     Income,
 }
 
-#[derive(Debug, Clone, EnumIter, PartialEq)]
+#[derive(Debug, Clone, EnumIter, PartialEq, Eq, Hash)]
 pub enum Class {
-    Unknown,
     Ambassador,
     Assassin,
     Captain,
@@ -43,8 +43,112 @@ struct Deck {
 
 #[derive(Debug)]
 struct PlayerData {
-    cards: Vec<Class>,
+    role1: Option<Class>,
+    role2: Option<Class>,
     gold: i32,
+}
+
+trait ActionImpl {
+    fn handle_rebuttal(&self, rebuttal: &Action) {
+        println!("This action cannot be rebutted!");
+    }
+
+    fn resolve_action(&mut self, engine: &mut Engine);
+}
+
+struct AmbassadorActionImpl<'a> {
+    acting_player: &'a mut Player,
+    select_role: fn([Option<Class>; 2]) -> [Option<Class>; 2],
+}
+
+impl<'a> ActionImpl for AmbassadorActionImpl<'a> {
+    fn resolve_action(&mut self, engine: &mut Engine) {
+        let card1 = engine.card_pool.draw_card();
+        let card2 = engine.card_pool.draw_card();
+
+        let returned_cards = (self.select_role)([card1.clone(), card2.clone()]);
+        match self.get_selection(returned_cards, card1, card2) {
+            Some(selection) => {
+                self.return_card(selection.returned_cards[0].clone(), engine);
+                self.return_card(selection.returned_cards[1].clone(), engine);
+                self.acting_player.data.role1 = selection.chosen_cards[0].clone();
+                self.acting_player.data.role2 = selection.chosen_cards[1].clone();
+            }
+            None => {
+                println!(
+                    "Player made invalid selection from ambassador. No roles will be changed."
+                );
+            }
+        };
+    }
+}
+
+struct AmbassadorCardSelection {
+    chosen_cards: [Option<Class>; 2],
+    returned_cards: [Option<Class>; 2],
+}
+
+impl<'a> AmbassadorActionImpl<'a> {
+    fn new(
+        acting_player: &'a mut Player,
+        select_role: fn([Option<Class>; 2]) -> [Option<Class>; 2],
+    ) -> Self {
+        AmbassadorActionImpl {
+            acting_player: acting_player,
+            select_role: select_role,
+        }
+    }
+
+    fn get_selection(
+        &self,
+        returned_cards: [Option<Class>; 2],
+        drawn_card1: Option<Class>,
+        drawn_card2: Option<Class>,
+    ) -> Option<AmbassadorCardSelection> {
+        let mut initial_roles_and_drawn_cards = MultiSet::new();
+        initial_roles_and_drawn_cards.insert(self.acting_player.data.role1.clone());
+        initial_roles_and_drawn_cards.insert(self.acting_player.data.role2.clone());
+        initial_roles_and_drawn_cards.insert(drawn_card1);
+        initial_roles_and_drawn_cards.insert(drawn_card2);
+
+        let mut returned_cards_set = MultiSet::new();
+        returned_cards_set.insert(returned_cards[0].clone());
+        returned_cards_set.insert(returned_cards[1].clone());
+
+        let new_roles = initial_roles_and_drawn_cards.difference(&returned_cards_set);
+
+        Some(AmbassadorCardSelection {
+            chosen_cards: [None, None],
+            returned_cards: [None, None],
+        })
+    }
+
+    fn return_card(&self, card: Option<Class>, engine: &mut Engine) {
+        match card {
+            Some(c) => engine.card_pool.return_card(c),
+            None => {}
+        };
+    }
+}
+
+struct IncomeActionImpl<'a> {
+    acting_player: &'a mut Player,
+}
+
+impl<'a> ActionImpl for IncomeActionImpl<'a> {
+    fn resolve_action(&mut self, engine: &mut Engine) {
+        let new_gold = cmp::min(2, engine.gold_pool);
+        self.acting_player.data.gold += new_gold;
+        engine.gold_pool -= new_gold;
+    }
+}
+
+impl<'a> IncomeActionImpl<'a> {
+    fn new(acting_player: &'a mut Player) -> Self {
+        IncomeActionImpl {
+            acting_player: acting_player,
+        }
+    }
 }
 
 pub trait PlayerController {
@@ -77,12 +181,14 @@ pub struct Engine {
     card_pool: Deck,
     gold_pool: i32,
     eliminated_players: Vec<Player>,
+    current_player_index: usize,
 }
 
 impl Default for PlayerData {
     fn default() -> Self {
         PlayerData {
-            cards: Vec::new(),
+            role1: None,
+            role2: None,
             gold: 2,
         }
     }
@@ -102,10 +208,6 @@ impl Deck {
         let mut deck = Deck::default();
         deck.cards = Vec::new();
         for class in Class::iter() {
-            if class == Class::Unknown {
-                continue;
-            }
-
             for _ in 0..3 {
                 deck.cards.push(class.clone())
             }
@@ -113,6 +215,18 @@ impl Deck {
 
         deck.cards.shuffle(&mut thread_rng());
         deck
+    }
+
+    fn draw_card(&mut self) -> Option<Class> {
+        self.cards.pop()
+    }
+
+    fn return_card(&mut self, card: Class) {
+        self.cards.push(card);
+    }
+
+    fn shuffle(&mut self) {
+        self.cards.shuffle(&mut thread_rng());
     }
 }
 
@@ -139,6 +253,27 @@ impl Engine {
         engine
     }
 
+    pub fn is_over(&self) -> bool {
+        return self.active_players.len() > 1;
+    }
+
+    pub fn do_turn(&mut self) {
+        let next_action = match self.active_players.get_mut(self.current_player_index) {
+            Some(current_player) => match current_player.data.gold {
+                10.. => Box::new(IncomeActionImpl::new(current_player)),
+                _ => {
+                    let next_action = current_player.controller.get_next_action();
+                    Engine::get_action_impl(current_player, next_action)
+                }
+            },
+            None => return,
+        };
+        // ask current player for action
+        // ask other players for rebuttals
+        //  if rebuttal: ask other players for
+        // resolve action
+    }
+
     pub fn print_deck(&self) {
         for card in &self.card_pool.cards {
             println!("Card: {:?}.", card);
@@ -149,6 +284,18 @@ impl Engine {
         for player in &self.active_players {
             println!("First action: {:?}", player.controller.get_next_action());
         }
+    }
+
+    fn get_action_impl<'a>(
+        acting_player: &'a mut Player,
+        action: Action,
+    ) -> Box<dyn ActionImpl + 'a> {
+        return match action {
+            Action::Ambassador { select_role } => {
+                Box::new(AmbassadorActionImpl::new(acting_player, select_role))
+            }
+            _ => Box::new(IncomeActionImpl::new(acting_player)),
+        };
     }
 }
 
@@ -196,7 +343,7 @@ mod tests {
         fn init(&self, _engine: &Engine) {}
 
         fn get_next_action(&self) -> Action {
-            Action::Unknown
+            Action::Income
         }
     }
 }

@@ -12,6 +12,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "coup-engine"
 version = "0.1.0"
 dependencies = [
+ "mset",
  "rand",
  "strum",
  "strum_macros",
@@ -39,6 +40,12 @@ name = "libc"
 version = "0.2.137"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
+
+[[package]]
+name = "mset"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05d1cf737c48148e9956a9ea00710258dcf2a7afdedc34a2c672a44866f618dc"
 
 [[package]]
 name = "ppv-lite86"
