@@ -49,3 +49,4 @@ cargo test
 - Traits == interfaces
     - Supports dynamic and static dispatch
         - We'll require dynamic for player controllers
+- String is to std::string as &str is to char *
