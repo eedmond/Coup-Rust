@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [ "4" ],
+            "args": [ "TempPlayer", "TempPlayer", "TempPlayer", "TempPlayer" ],
             "cwd": "${workspaceFolder}"
         },
         {
