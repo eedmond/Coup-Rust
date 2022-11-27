@@ -12,12 +12,10 @@ cargo run {num players}
 
 ## Project Structure
 `coup-engine`
-
-Library containing the engine implementation along with the interface definition for the players.
+- Library containing the engine implementation along with the interface definition for the players.
 
 `coup-game`
-
-Thin binary over coup-engine that parses command line args and calls into the engine library to run the game.
+- Thin binary over coup-engine that parses command line args and calls into the engine library to run the game.
 
 ## Running Tests
 ### From UI (with debugging):
@@ -48,3 +46,6 @@ cargo test
     1. debugging the whole game isn't possible when opening the library (child)
 
     Note: Everything worked after creating a separate (sibling) folder for the binary and library and using a wrapper code-workspace that holds both
+- Traits == interfaces
+    - Supports dynamic and static dispatch
+        - We'll require dynamic for player controllers
